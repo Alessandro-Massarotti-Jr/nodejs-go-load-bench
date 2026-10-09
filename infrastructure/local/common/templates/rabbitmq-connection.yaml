@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-connection
+  namespace: {{ .Values.namespace }}
+type: Opaque
+data:
+  AMQP_URL: {{ .Values.rabbitmq.AMQP_URL | b64enc }}
+---
+# Usado pelos ScaledObjects dos listeners para ler o tamanho das filas.
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-connection
+  namespace: {{ .Values.namespace }}
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: rabbitmq-connection
+      key: AMQP_URL

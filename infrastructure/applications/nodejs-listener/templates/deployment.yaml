@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-listener
+  labels:
+    app: nodejs-listener
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: nodejs-listener
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: nodejs-listener
+    spec:
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+      {{- end }}
+      containers:
+        - name: nodejs-listener
+          image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["node", "src/consumer.js"]
+          resources:
+            requests:
+              memory: {{ .Values.requests.memory }}
+              cpu: {{ .Values.requests.cpu }}
+            limits:
+              memory: {{ .Values.limits.memory }}
+              cpu: {{ .Values.limits.cpu }}
+          envFrom:
+            {{- range .Values.configMaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}

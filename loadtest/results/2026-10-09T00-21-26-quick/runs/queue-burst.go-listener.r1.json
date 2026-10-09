@@ -1,0 +1,123 @@
+{
+  "runId": "queue-burst.go-listener.r1.1791505855791",
+  "service": "go-listener",
+  "scenario": "queue-burst",
+  "run": 1,
+  "lang": "Go",
+  "kind": "queue",
+  "start": 1791505875.718,
+  "end": 1791505880.076,
+  "durationSeconds": 4.358000040054321,
+  "jobOk": true,
+  "queue": {
+    "published": 5000,
+    "publishSeconds": 0.261133858,
+    "publishRate": 19147.268141689998,
+    "drained": true,
+    "peakDepth": 0,
+    "depthTimeline": [
+      [
+        1791505875,
+        0,
+        2
+      ],
+      [
+        1791505876,
+        0,
+        2
+      ],
+      [
+        1791505877,
+        0,
+        2
+      ],
+      [
+        1791505879,
+        0,
+        2
+      ],
+      [
+        1791505880,
+        0,
+        2
+      ]
+    ],
+    "consumeRate": 1147.3152716945997
+  },
+  "series": {
+    "cpu": [],
+    "memory": [
+      [
+        1791505875.718,
+        0
+      ],
+      [
+        1791505880.718,
+        14475264
+      ]
+    ],
+    "memoryPerPod": [
+      [
+        1791505875.718,
+        0
+      ],
+      [
+        1791505880.718,
+        7237632
+      ]
+    ],
+    "replicas": [
+      [
+        1791505875.718,
+        2
+      ],
+      [
+        1791505880.718,
+        2
+      ]
+    ],
+    "readyReplicas": [
+      [
+        1791505875.718,
+        2
+      ],
+      [
+        1791505880.718,
+        2
+      ]
+    ],
+    "generatorCpu": [],
+    "ackRate": [
+      [
+        1791505875.718,
+        0
+      ],
+      [
+        1791505880.718,
+        301.93333333333334
+      ]
+    ]
+  },
+  "resources": {
+    "cpuAvgCores": null,
+    "cpuPeakCores": null,
+    "cpuSeconds": 1.586797,
+    "memoryAvgBytes": 0,
+    "memoryPeakBytes": 0,
+    "memoryPerPodAvgBytes": 0,
+    "memoryPerPodPeakBytes": 0,
+    "idleCpuCores": null,
+    "idleMemoryPerPodBytes": null,
+    "generatorCpuPeakCores": null
+  },
+  "scaling": {
+    "initialReplicas": 2,
+    "maxReplicas": 2,
+    "podSeconds": 10,
+    "firstScaleUpSeconds": null,
+    "podStartups": []
+  },
+  "efficiency": {
+    "messagesPerCpuSecond": 3151.0016719214873
+  }
+}

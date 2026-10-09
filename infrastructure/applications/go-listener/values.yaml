@@ -1,0 +1,19 @@
+namespace: bench
+replicas: 2
+MAX_REPLICAS: 5
+MIN_REPLICAS: 2
+requests:
+  memory: "256Mi"
+  cpu: "500m"
+limits:
+  memory: "256Mi"
+  cpu: "500m"
+# Mensagens prontas na fila, por pod, antes de escalar.
+QUEUE_LENGTH: 10
+configMaps:
+  - go-listener
+secrets:
+  - rabbitmq-connection
+imagePullSecrets: []
+HASH_ITERATIONS: 1000
+image: bench-go:local

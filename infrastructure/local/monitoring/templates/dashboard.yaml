@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bench-dashboard
+  labels:
+    grafana_dashboard: "1"
+data:
+  bench.json: |-
+{{ .Files.Get "dashboards/bench.json" | indent 4 }}

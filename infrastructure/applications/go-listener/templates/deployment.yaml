@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-listener
+  labels:
+    app: go-listener
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: go-listener
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: go-listener
+    spec:
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+      {{- end }}
+      containers:
+        - name: go-listener
+          image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["/app/consumer"]
+          resources:
+            requests:
+              memory: {{ .Values.requests.memory }}
+              cpu: {{ .Values.requests.cpu }}
+            limits:
+              memory: {{ .Values.limits.memory }}
+              cpu: {{ .Values.limits.cpu }}
+          envFrom:
+            {{- range .Values.configMaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}

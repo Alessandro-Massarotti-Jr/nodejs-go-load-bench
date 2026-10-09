@@ -1,0 +1,17 @@
+{{- if .Capabilities.APIVersions.Has "monitoring.coreos.com/v1" }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: rabbitmq
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  endpoints:
+    # /metrics/per-object traz métricas por fila (mensagens prontas, não confirmadas, etc.).
+    - port: prometheus
+      path: /metrics/per-object
+      interval: 5s
+      scrapeTimeout: 4s
+{{- end }}

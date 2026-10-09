@@ -1,0 +1,4 @@
+namespace: bench
+rabbitmq:
+  # Host com FQDN: o KEDA roda no namespace "keda" e também usa esta URL.
+  AMQP_URL: amqp://admin:admin@rabbitmq-svc.bench.svc.cluster.local:5672/

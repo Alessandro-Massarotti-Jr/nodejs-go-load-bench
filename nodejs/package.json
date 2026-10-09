@@ -1,0 +1,13 @@
+{
+  "name": "bench-nodejs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "http": "node src/http.js",
+    "consumer": "node src/consumer.js"
+  },
+  "dependencies": {
+    "amqplib": "^2.2.0"
+  }
+}

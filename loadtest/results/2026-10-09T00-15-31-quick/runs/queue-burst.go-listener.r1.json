@@ -1,0 +1,143 @@
+{
+  "runId": "queue-burst.go-listener.r1.1791505180015",
+  "service": "go-listener",
+  "scenario": "queue-burst",
+  "run": 1,
+  "lang": "Go",
+  "kind": "queue",
+  "start": 1791505199.858,
+  "end": 1791505205.181,
+  "durationSeconds": 5.322999954223633,
+  "jobOk": true,
+  "queue": {
+    "published": 5000,
+    "publishSeconds": 0.272207452,
+    "publishRate": 18368.34356761107,
+    "drained": true,
+    "peakDepth": 0,
+    "depthTimeline": [
+      [
+        1791505200,
+        0,
+        2
+      ],
+      [
+        1791505202,
+        0,
+        2
+      ],
+      [
+        1791505203,
+        0,
+        2
+      ],
+      [
+        1791505204,
+        0,
+        2
+      ],
+      [
+        1791505205,
+        0,
+        2
+      ]
+    ],
+    "consumeRate": 939.3199404468635
+  },
+  "series": {
+    "cpu": [],
+    "memory": [
+      [
+        1791505199.858,
+        0
+      ],
+      [
+        1791505204.858,
+        9891840
+      ],
+      [
+        1791505209.858,
+        9891840
+      ]
+    ],
+    "memoryPerPod": [
+      [
+        1791505199.858,
+        0
+      ],
+      [
+        1791505204.858,
+        4945920
+      ],
+      [
+        1791505209.858,
+        4945920
+      ]
+    ],
+    "replicas": [
+      [
+        1791505199.858,
+        2
+      ],
+      [
+        1791505204.858,
+        2
+      ],
+      [
+        1791505209.858,
+        2
+      ]
+    ],
+    "readyReplicas": [
+      [
+        1791505199.858,
+        2
+      ],
+      [
+        1791505204.858,
+        2
+      ],
+      [
+        1791505209.858,
+        2
+      ]
+    ],
+    "generatorCpu": [],
+    "ackRate": [
+      [
+        1791505199.858,
+        0
+      ],
+      [
+        1791505204.858,
+        262.1016135484731
+      ],
+      [
+        1791505209.858,
+        333.37778370449394
+      ]
+    ]
+  },
+  "resources": {
+    "cpuAvgCores": null,
+    "cpuPeakCores": null,
+    "cpuSeconds": 0,
+    "memoryAvgBytes": 4945920,
+    "memoryPeakBytes": 9891840,
+    "memoryPerPodAvgBytes": 2472960,
+    "memoryPerPodPeakBytes": 4945920,
+    "idleCpuCores": null,
+    "idleMemoryPerPodBytes": 0,
+    "generatorCpuPeakCores": null
+  },
+  "scaling": {
+    "initialReplicas": 2,
+    "maxReplicas": 2,
+    "podSeconds": 20,
+    "firstScaleUpSeconds": null,
+    "podStartups": []
+  },
+  "efficiency": {
+    "messagesPerCpuSecond": null
+  }
+}

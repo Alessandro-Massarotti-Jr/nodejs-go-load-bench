@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rabbitmq
+  name: rabbitmq-svc
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+  - name: amqp
+    port: 5672
+    protocol: TCP
+    targetPort: 5672
+  - name: management
+    port: 15672
+    protocol: TCP
+    targetPort: 15672
+  - name: prometheus
+    port: 15692
+    protocol: TCP
+    targetPort: 15692
+  selector:
+    app: rabbitmq
+  type: ClusterIP
+
+---
+# API de gerenciamento em localhost:<managementPort> (Docker Desktop).
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rabbitmq
+  name: rabbitmq-management-svc
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+  - name: management
+    port: {{ .Values.managementPort }}
+    protocol: TCP
+    targetPort: 15672
+  selector:
+    app: rabbitmq
+  type: LoadBalancer

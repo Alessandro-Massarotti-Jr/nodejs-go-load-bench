@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-listener
+  namespace: {{ .Values.namespace }}
+data:
+  QUEUE: go-queue
+  HASH_ITERATIONS: {{ .Values.HASH_ITERATIONS | quote }}

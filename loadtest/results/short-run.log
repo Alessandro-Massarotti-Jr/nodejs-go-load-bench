@@ -1,0 +1,23 @@
+[22:32:22] suíte 2026-10-09T01-32-22-short: 5 cenários × 1 rodadas
+[22:32:22] ▶ http-baseline | nodejs-http | rodada 1
+[22:34:11] ✔ http-baseline | nodejs-http | rodada 1: 60s, máx 2 pods, CPU 29 cpu·s, p95 3.1ms, erros 0.00%
+[22:34:11] ▶ http-baseline | go-http | rodada 1
+[22:36:29] ✔ http-baseline | go-http | rodada 1: 60s, máx 2 pods, CPU 10 cpu·s, p95 2.0ms, erros 0.00%
+[22:36:29] ▶ http-ramp | nodejs-http | rodada 1
+[22:39:23] ✔ http-ramp | nodejs-http | rodada 1: 125s, máx 4 pods, CPU 162 cpu·s, p95 2874.0ms, erros 16.44%
+[22:39:23] ▶ http-ramp | go-http | rodada 1
+[22:42:43] ✔ http-ramp | go-http | rodada 1: 120s, máx 2 pods, CPU 65 cpu·s, p95 1.0ms, erros 0.00%
+[22:42:43] ▶ http-stress | nodejs-http | rodada 1
+[22:45:43] ✔ http-stress | nodejs-http | rodada 1: 128s, máx 3 pods, CPU 170 cpu·s, p95 2866.5ms, erros 34.71%
+[22:45:43] ▶ http-stress | go-http | rodada 1
+[22:49:02] ✔ http-stress | go-http | rodada 1: 120s, máx 4 pods, CPU 145 cpu·s, p95 500.4ms, erros 0.00%
+[22:49:02] ▶ queue-burst | nodejs-listener | rodada 1
+[22:50:46] ✔ queue-burst | nodejs-listener | rodada 1: 59s, máx 3 pods, CPU 63 cpu·s, 507 msg/s
+[22:50:46] ▶ queue-burst | go-listener | rodada 1
+[22:51:46] ✔ queue-burst | go-listener | rodada 1: 14s, máx 2 pods, CPU 10 cpu·s, 2130 msg/s
+[22:51:46] ▶ queue-sustained | nodejs-listener | rodada 1
+[22:54:26] ✔ queue-sustained | nodejs-listener | rodada 1: 114s, máx 4 pods, CPU 155 cpu·s, 631 msg/s
+[22:54:26] ▶ queue-sustained | go-listener | rodada 1
+[22:56:46] ✔ queue-sustained | go-listener | rodada 1: 93s, máx 2 pods, CPU 25 cpu·s, 771 msg/s
+[22:56:49] suíte concluída: C:\Users\alema\Documents\projetos\_pessoal\go-estudo\loadtest\results\2026-10-09T01-32-22-short
+[22:56:49] gere o relatório com: node loadtest/report.mjs 2026-10-09T01-32-22-short

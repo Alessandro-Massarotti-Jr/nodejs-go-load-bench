@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodejs-listener
+  namespace: {{ .Values.namespace }}
+data:
+  QUEUE: nodejs-queue
+  HASH_ITERATIONS: {{ .Values.HASH_ITERATIONS | quote }}

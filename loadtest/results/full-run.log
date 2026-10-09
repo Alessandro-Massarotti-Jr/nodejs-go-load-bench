@@ -1,0 +1,10 @@
+[21:40:57] suíte 2026-10-09T00-40-56: 5 cenários × 3 rodadas
+[21:40:57] ▶ http-baseline | nodejs-http | rodada 1
+[21:44:34] ✔ http-baseline | nodejs-http | rodada 1: 120s, máx 2 pods, CPU 59 cpu·s, p95 3.1ms, erros 0.00%
+[21:44:34] ▶ http-baseline | go-http | rodada 1
+[21:48:11] ✔ http-baseline | go-http | rodada 1: 120s, máx 2 pods, CPU 20 cpu·s, p95 1.9ms, erros 0.00%
+[21:48:11] ▶ http-baseline | go-http | rodada 2
+[21:51:18] ✔ http-baseline | go-http | rodada 2: 120s, máx 2 pods, CPU 19 cpu·s, p95 1.6ms, erros 0.00%
+[21:51:18] ▶ http-baseline | nodejs-http | rodada 2
+[21:54:26] ✔ http-baseline | nodejs-http | rodada 2: 120s, máx 2 pods, CPU 56 cpu·s, p95 3.0ms, erros 0.00%
+[21:54:26] ▶ http-baseline | nodejs-http | rodada 3

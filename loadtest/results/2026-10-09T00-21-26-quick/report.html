@@ -1,0 +1,281 @@
+<title>Go × Node.js no Kubernetes</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: relatório de bancada em uma coluna; cada cenário é uma "ficha de ensaio" com tabela comparativa e gráficos. */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --fg: #16202a;
+  --muted: #5b6875;
+  --line: #dde3e9;
+  --go: #0089ad;
+  --node: #3f7f33;
+  --go-soft: #e0f3f8;
+  --node-soft: #e6f1e2;
+  --warn-bg: #fff4d6;
+  --warn-fg: #6b4e00;
+  --tie: #8a96a3;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #161e26; --fg: #e4eaf0; --muted: #94a2af; --line: #26323d;
+    --go: #3fc4e8; --node: #7cc26a; --go-soft: #0f2d38; --node-soft: #1a2e16;
+    --warn-bg: #3a2f0d; --warn-fg: #f3d27a; --tie: #7d8a97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #161e26; --fg: #e4eaf0; --muted: #94a2af; --line: #26323d;
+  --go: #3fc4e8; --node: #7cc26a; --go-soft: #0f2d38; --node-soft: #1a2e16;
+  --warn-bg: #3a2f0d; --warn-fg: #f3d27a; --tie: #7d8a97;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--font-display); font-stretch: 80%; text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.75rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 600; font-stretch: 90%; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 0.72rem/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.go { color: var(--go); }
+.node { color: var(--node); }
+
+header { display: grid; gap: 14px; }
+header h1 .x { color: var(--muted); font-weight: 500; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--muted); font: 0.8rem var(--font-data); }
+.banner { background: var(--warn-bg); color: var(--warn-fg); padding: 12px 16px; border-radius: 6px; font-size: 0.9rem; }
+
+.setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.setup div { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.setup b { font: 600 1.05rem var(--font-data); }
+.setup span { color: var(--muted); font-size: 0.8rem; }
+
+section { display: grid; gap: 18px; min-width: 0; }
+.section-head { display: grid; gap: 6px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 0.7rem var(--font-data); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--bg); }
+td.v { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+th.v { text-align: right; }
+td .sd { color: var(--muted); font-size: 0.78rem; }
+td .unit { color: var(--muted); font-size: 0.78rem; margin-left: 3px; }
+td.best { font-weight: 600; }
+td.best.go-col { color: var(--go); }
+td.best.node-col { color: var(--node); }
+.chip { display: inline-block; font: 600 0.75rem var(--font-data); padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.chip.go { background: var(--go-soft); color: var(--go); }
+.chip.node { background: var(--node-soft); color: var(--node); }
+.chip.tie { color: var(--tie); border: 1px solid var(--line); }
+.chip .noise { font-weight: 400; opacity: 0.8; }
+.label-col { min-width: 220px; }
+
+.scoreboard td:first-child { font-weight: 500; }
+
+.charts-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; justify-content: space-between; }
+.runs { display: flex; gap: 6px; flex-wrap: wrap; }
+.runs button { font: 500 0.8rem var(--font-data); padding: 5px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.runs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.runs button:focus-visible { outline: 2px solid var(--go); outline-offset: 2px; }
+.legend { display: flex; gap: 16px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 14px; }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 8px; display: grid; gap: 8px; min-width: 0; }
+.chart .box { position: relative; height: 220px; }
+.empty { color: var(--muted); font-size: 0.85rem; }
+
+.notes { display: grid; gap: 10px; color: var(--muted); font-size: 0.88rem; }
+.notes p { max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<main class="page" id="app">
+  <p class="empty">Carregando relatório…</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const DATA = {"suiteId":"2026-10-09T00-21-26-quick","quick":true,"startedAt":"2026-10-09T00:21:30.995Z","runsPerScenario":1,"totalRuns":10,"failures":[],"hashIterations":1000,"images":{"go":13.145261764526367,"nodejs":164.8271951675415},"services":{"nodejs-http":{"chart":"nodejs","lang":"Node.js","kind":"http","target":"http://nodejs-svc:3001/"},"go-http":{"chart":"go","lang":"Go","kind":"http","target":"http://go-svc:8081/"},"nodejs-listener":{"chart":"nodejs-listener","lang":"Node.js","kind":"queue","queue":"nodejs-queue"},"go-listener":{"chart":"go-listener","lang":"Go","kind":"queue","queue":"go-queue"}},"scenarios":[{"id":"http-baseline","kind":"http","title":"HTTP: baseline (200 req/s constantes)","description":"Carga leve e constante: mede latência sem pressão de escala.","k6":{"executor":"constant-arrival-rate","rate":200,"timeUnit":"1s","duration":"20s","preAllocatedVUs":50,"maxVUs":500},"services":["nodejs-http","go-http"],"metrics":[{"key":"p50","label":"Latência mediana (p50)","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":2.312931,"sd":0,"n":1,"values":[2.312931]},"go-http":{"mean":0.907105,"sd":0,"n":1,"values":[0.907105]}}},{"key":"avg","label":"Latência média","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":2.6366812719320087,"sd":0,"n":1,"values":[2.6366812719320087]},"go-http":{"mean":1.2790750992251962,"sd":0,"n":1,"values":[1.2790750992251962]}}},{"key":"p95","label":"Latência p95","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":3.300222,"sd":0,"n":1,"values":[3.300222]},"go-http":{"mean":3.060329,"sd":0,"n":1,"values":[3.060329]}}},{"key":"p99","label":"Latência p99","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":9.655162,"sd":0,"n":1,"values":[9.655162]},"go-http":{"mean":3.646947,"sd":0,"n":1,"values":[3.646947]}}},{"key":"max","label":"Latência máxima","unit":"ms","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":42.74867,"sd":0,"n":1,"values":[42.74867]},"go-http":{"mean":4.328644,"sd":0,"n":1,"values":[4.328644]}}},{"key":"rps","label":"Vazão média","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":200.0360489958547,"sd":0,"n":1,"values":[200.0360489958547]},"go-http":{"mean":200.04309521250408,"sd":0,"n":1,"values":[200.04309521250408]}}},{"key":"peakRps","label":"Vazão no pico","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":200.08075913587723,"sd":0,"n":1,"values":[200.08075913587723]},"go-http":{"mean":200.0801121570198,"sd":0,"n":1,"values":[200.0801121570198]}}},{"key":"requests","label":"Requisições feitas","unit":"req","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":4001,"sd":0,"n":1,"values":[4001]},"go-http":{"mean":4001,"sd":0,"n":1,"values":[4001]}}},{"key":"errors","label":"Taxa de erro","unit":"%","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0,"sd":0,"n":1,"values":[0]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"dropped","label":"Requisições não enviadas (servidor saturado)","unit":"req","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":0,"sd":0,"n":1,"values":[0]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"duration","label":"Duração do teste","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":20.001394849,"sd":0,"n":1,"values":[20.001394849]},"go-http":{"mean":20.00069033,"sd":0,"n":1,"values":[20.00069033]}}},{"key":"efficiency","label":"Requisições por segundo de CPU","unit":"req/cpu·s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":395.56543562867074,"sd":0,"n":1,"values":[395.56543562867074]},"go-http":{"mean":977.8824067687744,"sd":0,"n":1,"values":[977.8824067687744]}}},{"key":"maxReplicas","label":"Pods no pico","unit":"pods","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":2,"sd":0,"n":1,"values":[2]},"go-http":{"mean":2,"sd":0,"n":1,"values":[2]}}},{"key":"firstScaleUp","label":"Tempo até o 1º scale-up","unit":"s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}},{"key":"podSeconds","label":"Pod-segundos (custo)","unit":"pod·s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":50,"sd":0,"n":1,"values":[50]},"go-http":{"mean":50,"sd":0,"n":1,"values":[50]}}},{"key":"cpuSeconds","label":"CPU consumida","unit":"cpu·s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":10.114635,"sd":0,"n":1,"values":[10.114635]},"go-http":{"mean":4.091494,"sd":0,"n":1,"values":[4.091494]}}},{"key":"cpuAvg","label":"CPU média (soma dos pods)","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.12088904945798658,"sd":0,"n":1,"values":[0.12088904945798658]},"go-http":{"mean":0.07335655281180296,"sd":0,"n":1,"values":[0.07335655281180296]}}},{"key":"cpuPeak","label":"CPU no pico","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.21824184413254072,"sd":0,"n":1,"values":[0.21824184413254072]},"go-http":{"mean":0.12683719496905904,"sd":0,"n":1,"values":[0.12683719496905904]}}},{"key":"memPeak","label":"Memória no pico (soma)","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":44.75,"sd":0,"n":1,"values":[44.75]},"go-http":{"mean":13.03125,"sd":0,"n":1,"values":[13.03125]}}},{"key":"memPod","label":"Memória média por pod","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":21.774609375,"sd":0,"n":1,"values":[21.774609375]},"go-http":{"mean":4.546875,"sd":0,"n":1,"values":[4.546875]}}},{"key":"memIdle","label":"Memória por pod em repouso","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":19.791015625,"sd":0,"n":1,"values":[19.791015625]},"go-http":{"mean":1.73046875,"sd":0,"n":1,"values":[1.73046875]}}},{"key":"startup","label":"Subida de pod novo até pronto","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}}],"series":{"nodejs-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2]],"cpu":[[0,0.001],[5,0.0719],[10,0.0964],[15,0.2169],[20,0.2182],[25,0.2471]],"memory":[[0,39.6],[5,44.3],[10,44.3],[15,44.8],[20,44.8],[25,40]],"rps":[[10,200.0397],[15,200.0808],[20,143.165],[25,2.8]],"p95":[[5,5.5],[10,3.9],[15,3.4],[20,3.3],[25,3.3]]}],"go-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2]],"cpu":[[10,0.0403],[15,0.0529],[20,0.1268],[25,0.1213]],"memory":[[0,1.7],[5,7.4],[10,11.7],[15,11.7],[20,13],[25,13]],"rps":[[10,200],[15,200.0801],[20,143.83],[25,2.6]],"p95":[[5,3.1],[10,3.2],[15,3.1],[20,3.1],[25,3.1]]}]}},{"id":"http-ramp","kind":"http","title":"HTTP: rampa até 1500 req/s","description":"Sobe de 0 a 1500 req/s em 5 min e segura 2 min: força o autoscaling.","k6":{"executor":"ramping-arrival-rate","startRate":0,"timeUnit":"1s","preAllocatedVUs":200,"maxVUs":2000,"stages":[{"target":300,"duration":"20s"},{"target":300,"duration":"10s"}]},"services":["nodejs-http","go-http"],"metrics":[{"key":"p50","label":"Latência mediana (p50)","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":2.227273,"sd":0,"n":1,"values":[2.227273]},"go-http":{"mean":0.7823405,"sd":0,"n":1,"values":[0.7823405]}}},{"key":"avg","label":"Latência média","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":2.8865552422474114,"sd":0,"n":1,"values":[2.8865552422474114]},"go-http":{"mean":1.0239082039013017,"sd":0,"n":1,"values":[1.0239082039013017]}}},{"key":"p95","label":"Latência p95","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":3.35235565,"sd":0,"n":1,"values":[3.35235565]},"go-http":{"mean":2.7094454499999996,"sd":0,"n":1,"values":[2.7094454499999996]}}},{"key":"p99","label":"Latência p99","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":27.030935209999967,"sd":0,"n":1,"values":[27.030935209999967]},"go-http":{"mean":3.370115289999997,"sd":0,"n":1,"values":[3.370115289999997]}}},{"key":"max","label":"Latência máxima","unit":"ms","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":87.737423,"sd":0,"n":1,"values":[87.737423]},"go-http":{"mean":4.144827,"sd":0,"n":1,"values":[4.144827]}}},{"key":"rps","label":"Vazão média","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":199.9231925292771,"sd":0,"n":1,"values":[199.9231925292771]},"go-http":{"mean":199.93224852094608,"sd":0,"n":1,"values":[199.93224852094608]}}},{"key":"peakRps","label":"Vazão no pico","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":299.94001199760044,"sd":0,"n":1,"values":[299.94001199760044]},"go-http":{"mean":299.9600319744205,"sd":0,"n":1,"values":[299.9600319744205]}}},{"key":"requests","label":"Requisições feitas","unit":"req","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":5998,"sd":0,"n":1,"values":[5998]},"go-http":{"mean":5998,"sd":0,"n":1,"values":[5998]}}},{"key":"errors","label":"Taxa de erro","unit":"%","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0,"sd":0,"n":1,"values":[0]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"dropped","label":"Requisições não enviadas (servidor saturado)","unit":"req","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":0,"sd":0,"n":1,"values":[0]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"duration","label":"Duração do teste","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":30.001521705,"sd":0,"n":1,"values":[30.001521705]},"go-http":{"mean":30.000162777,"sd":0,"n":1,"values":[30.000162777]}}},{"key":"efficiency","label":"Requisições por segundo de CPU","unit":"req/cpu·s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":393.7175337292126,"sd":0,"n":1,"values":[393.7175337292126]},"go-http":{"mean":1043.8151775390743,"sd":0,"n":1,"values":[1043.8151775390743]}}},{"key":"maxReplicas","label":"Pods no pico","unit":"pods","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":2,"sd":0,"n":1,"values":[2]},"go-http":{"mean":2,"sd":0,"n":1,"values":[2]}}},{"key":"firstScaleUp","label":"Tempo até o 1º scale-up","unit":"s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}},{"key":"podSeconds","label":"Pod-segundos (custo)","unit":"pod·s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":70,"sd":0,"n":1,"values":[70]},"go-http":{"mean":70,"sd":0,"n":1,"values":[70]}}},{"key":"cpuSeconds","label":"CPU consumida","unit":"cpu·s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":15.234272,"sd":0,"n":1,"values":[15.234272]},"go-http":{"mean":5.746228,"sd":0,"n":1,"values":[5.746228]}}},{"key":"cpuAvg","label":"CPU média (soma dos pods)","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.23393036123301403,"sd":0,"n":1,"values":[0.23393036123301403]},"go-http":{"mean":0.10018628109236777,"sd":0,"n":1,"values":[0.10018628109236777]}}},{"key":"cpuPeak","label":"CPU no pico","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.36917605756287997,"sd":0,"n":1,"values":[0.36917605756287997]},"go-http":{"mean":0.15087332040244716,"sd":0,"n":1,"values":[0.15087332040244716]}}},{"key":"memPeak","label":"Memória no pico (soma)","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":46.3203125,"sd":0,"n":1,"values":[46.3203125]},"go-http":{"mean":20.16015625,"sd":0,"n":1,"values":[20.16015625]}}},{"key":"memPod","label":"Memória média por pod","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":19.952845982142858,"sd":0,"n":1,"values":[19.952845982142858]},"go-http":{"mean":6.701729910714286,"sd":0,"n":1,"values":[6.701729910714286]}}},{"key":"memIdle","label":"Memória por pod em repouso","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":17.75,"sd":0,"n":1,"values":[17.75]},"go-http":{"mean":3.1015625,"sd":0,"n":1,"values":[3.1015625]}}},{"key":"startup","label":"Subida de pod novo até pronto","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}}],"series":{"nodejs-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2]],"cpu":[[15,0.1607],[20,0.2026],[25,0.2032],[30,0.3692],[35,0.4239]],"memory":[[0,17.8],[5,40.6],[10,40.6],[15,46.3],[20,46.3],[25,46.3],[30,41.5],[35,41.5]],"rps":[[10,111.6279],[15,186.2882],[20,261.2955],[25,299.94],[30,212.867],[35,4.4]],"p95":[[5,4.7],[10,3.5],[15,3.4],[20,3.3],[25,3.5],[30,3.4],[35,3.4]]}],"go-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2]],"cpu":[[15,0.0324],[20,0.0907],[25,0.1268],[30,0.1509],[35,0.1581]],"memory":[[0,3.1],[5,9.1],[10,9.1],[15,14.2],[20,17.9],[25,20.2],[30,20.2],[35,18.2]],"rps":[[10,111.5956],[15,186.5536],[20,261.5842],[25,299.96],[30,231.2557],[35,4.6]],"p95":[[5,3.2],[10,3.1],[15,3],[20,3],[25,2.9],[30,2.7],[35,2.7]]}]}},{"id":"http-stress","kind":"http","title":"HTTP: estresse até 12000 req/s","description":"Rampa de 100 a 12000 req/s em 6 min: encontra o limite de cada serviço.","k6":{"executor":"ramping-arrival-rate","startRate":100,"timeUnit":"1s","preAllocatedVUs":500,"maxVUs":3000,"stages":[{"target":1500,"duration":"30s"}]},"services":["nodejs-http","go-http"],"metrics":[{"key":"p50","label":"Latência mediana (p50)","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":1012.2123075,"sd":0,"n":1,"values":[1012.2123075]},"go-http":{"mean":0.675285,"sd":0,"n":1,"values":[0.675285]}}},{"key":"avg","label":"Latência média","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":1335.547285585357,"sd":0,"n":1,"values":[1335.547285585357]},"go-http":{"mean":0.7727777858542912,"sd":0,"n":1,"values":[0.7727777858542912]}}},{"key":"p95","label":"Latência p95","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":9999.9004754,"sd":0,"n":1,"values":[9999.9004754]},"go-http":{"mean":1.2660106,"sd":0,"n":1,"values":[1.2660106]}}},{"key":"p99","label":"Latência p99","unit":"ms","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":10000.61247566,"sd":0,"n":1,"values":[10000.61247566]},"go-http":{"mean":2.6497338800000074,"sd":0,"n":1,"values":[2.6497338800000074]}}},{"key":"max","label":"Latência máxima","unit":"ms","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":10010.049042,"sd":0,"n":1,"values":[10010.049042]},"go-http":{"mean":20.40083,"sd":0,"n":1,"values":[20.40083]}}},{"key":"rps","label":"Vazão média","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":401.92851175671603,"sd":0,"n":1,"values":[401.92851175671603]},"go-http":{"mean":799.2247145770546,"sd":0,"n":1,"values":[799.2247145770546]}}},{"key":"peakRps","label":"Vazão no pico","unit":"req/s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":600.7916833266694,"sd":0,"n":1,"values":[600.7916833266694]},"go-http":{"mean":1143.371325734853,"sd":0,"n":1,"values":[1143.371325734853]}}},{"key":"requests","label":"Requisições feitas","unit":"req","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":16004,"sd":0,"n":1,"values":[16004]},"go-http":{"mean":23979,"sd":0,"n":1,"values":[23979]}}},{"key":"errors","label":"Taxa de erro","unit":"%","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":22.131967008247937,"sd":0,"n":1,"values":[22.131967008247937]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"dropped","label":"Requisições não enviadas (servidor saturado)","unit":"req","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":7970,"sd":0,"n":1,"values":[7970]},"go-http":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"duration","label":"Duração do teste","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":39.818026171,"sd":0,"n":1,"values":[39.818026171]},"go-http":{"mean":30.002825942,"sd":0,"n":1,"values":[30.002825942]}}},{"key":"efficiency","label":"Requisições por segundo de CPU","unit":"req/cpu·s","lowerBetter":false,"digits":0,"values":{"nodejs-http":{"mean":361.94055903232515,"sd":0,"n":1,"values":[361.94055903232515]},"go-http":{"mean":1622.9896391005475,"sd":0,"n":1,"values":[1622.9896391005475]}}},{"key":"maxReplicas","label":"Pods no pico","unit":"pods","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":2,"sd":0,"n":1,"values":[2]},"go-http":{"mean":2,"sd":0,"n":1,"values":[2]}}},{"key":"firstScaleUp","label":"Tempo até o 1º scale-up","unit":"s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}},{"key":"podSeconds","label":"Pod-segundos (custo)","unit":"pod·s","lowerBetter":true,"digits":0,"values":{"nodejs-http":{"mean":80,"sd":0,"n":1,"values":[80]},"go-http":{"mean":70,"sd":0,"n":1,"values":[70]}}},{"key":"cpuSeconds","label":"CPU consumida","unit":"cpu·s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":34.431067999999996,"sd":0,"n":1,"values":[34.431067999999996]},"go-http":{"mean":14.774586,"sd":0,"n":1,"values":[14.774586]}}},{"key":"cpuAvg","label":"CPU média (soma dos pods)","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.5602572166825152,"sd":0,"n":1,"values":[0.5602572166825152]},"go-http":{"mean":0.22412518241845225,"sd":0,"n":1,"values":[0.22412518241845225]}}},{"key":"cpuPeak","label":"CPU no pico","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-http":{"mean":0.8000990059793353,"sd":0,"n":1,"values":[0.8000990059793353]},"go-http":{"mean":0.3658279614853719,"sd":0,"n":1,"values":[0.3658279614853719]}}},{"key":"memPeak","label":"Memória no pico (soma)","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":51.18359375,"sd":0,"n":1,"values":[51.18359375]},"go-http":{"mean":29.484375,"sd":0,"n":1,"values":[29.484375]}}},{"key":"memPod","label":"Memória média por pod","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":22.240234375,"sd":0,"n":1,"values":[22.240234375]},"go-http":{"mean":10.924665178571429,"sd":0,"n":1,"values":[10.924665178571429]}}},{"key":"memIdle","label":"Memória por pod em repouso","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":18.08984375,"sd":0,"n":1,"values":[18.08984375]},"go-http":{"mean":3.265625,"sd":0,"n":1,"values":[3.265625]}}},{"key":"startup","label":"Subida de pod novo até pronto","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-http":{"mean":null,"sd":null,"n":0},"go-http":{"mean":null,"sd":null,"n":0}}}],"series":{"nodejs-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2],[40,2]],"cpu":[[15,0.3596],[20,0.4604],[25,0.4868],[30,0.6944],[35,0.8001],[40,0.8627]],"memory":[[0,18.1],[5,43.3],[10,43.3],[15,49.6],[20,49.6],[25,49.6],[30,51.2],[35,51.2],[40,60.3]],"rps":[[10,400.8802],[15,451.6832],[20,449.3837],[25,395.7632],[30,600.7917],[35,413.4634],[40,206.3355]],"p95":[[5,4.9],[10,329.7],[15,1171.9],[20,1282.9],[25,10000.9],[30,10000.8],[35,10000.6],[40,10000.6]]}],"go-http":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2]],"cpu":[[10,0.1051],[15,0.1405],[20,0.1962],[25,0.3131],[30,0.3658],[35,0.4252]],"memory":[[0,6.5],[5,6.5],[10,26.4],[15,26.4],[20,28.1],[25,29.5],[30,29.5],[35,25.8]],"rps":[[10,445.6218],[15,679.1358],[20,911.2952],[25,1143.3713],[30,1040.1409],[35,38.6]],"p95":[[5,2.3],[10,2.3],[15,1.9],[20,1.6],[25,1.4],[30,1.3],[35,1.3]]}]}},{"id":"queue-burst","kind":"queue","title":"Fila: rajada de 100 mil mensagens","description":"Publica 100 mil mensagens de uma vez e mede o tempo até a fila esvaziar.","publisher":{"MODE":"burst","COUNT":"5000"},"services":["nodejs-listener","go-listener"],"metrics":[{"key":"drain","label":"Tempo para processar tudo","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":14.460000038146973,"sd":0,"n":1,"values":[14.460000038146973]},"go-listener":{"mean":4.358000040054321,"sd":0,"n":1,"values":[4.358000040054321]}}},{"key":"consumeRate","label":"Vazão de processamento","unit":"msg/s","lowerBetter":false,"digits":0,"values":{"nodejs-listener":{"mean":345.78146520120913,"sd":0,"n":1,"values":[345.78146520120913]},"go-listener":{"mean":1147.3152716945997,"sd":0,"n":1,"values":[1147.3152716945997]}}},{"key":"peakDepth","label":"Pico de mensagens na fila","unit":"msg","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":3488,"sd":0,"n":1,"values":[3488]},"go-listener":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"published","label":"Mensagens publicadas","unit":"msg","lowerBetter":null,"digits":0,"values":{"nodejs-listener":{"mean":5000,"sd":0,"n":1,"values":[5000]},"go-listener":{"mean":5000,"sd":0,"n":1,"values":[5000]}}},{"key":"efficiency","label":"Mensagens por segundo de CPU","unit":"msg/cpu·s","lowerBetter":false,"digits":0,"values":{"nodejs-listener":{"mean":434.24090260966625,"sd":0,"n":1,"values":[434.24090260966625]},"go-listener":{"mean":3151.0016719214873,"sd":0,"n":1,"values":[3151.0016719214873]}}},{"key":"maxReplicas","label":"Pods no pico","unit":"pods","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":2,"sd":0,"n":1,"values":[2]},"go-listener":{"mean":2,"sd":0,"n":1,"values":[2]}}},{"key":"firstScaleUp","label":"Tempo até o 1º scale-up","unit":"s","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":null,"sd":null,"n":0},"go-listener":{"mean":null,"sd":null,"n":0}}},{"key":"podSeconds","label":"Pod-segundos (custo)","unit":"pod·s","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":30,"sd":0,"n":1,"values":[30]},"go-listener":{"mean":10,"sd":0,"n":1,"values":[10]}}},{"key":"cpuSeconds","label":"CPU consumida","unit":"cpu·s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":11.514346,"sd":0,"n":1,"values":[11.514346]},"go-listener":{"mean":1.586797,"sd":0,"n":1,"values":[1.586797]}}},{"key":"cpuAvg","label":"CPU média (soma dos pods)","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-listener":{"mean":null,"sd":null,"n":0},"go-listener":{"mean":null,"sd":null,"n":0}}},{"key":"cpuPeak","label":"CPU no pico","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-listener":{"mean":null,"sd":null,"n":0},"go-listener":{"mean":null,"sd":null,"n":0}}},{"key":"memPeak","label":"Memória no pico (soma)","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":35.26953125,"sd":0,"n":1,"values":[35.26953125]},"go-listener":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"memPod","label":"Memória média por pod","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":14.413411458333334,"sd":0,"n":1,"values":[14.413411458333334]},"go-listener":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"memIdle","label":"Memória por pod em repouso","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":15.94140625,"sd":0,"n":1,"values":[15.94140625]},"go-listener":{"mean":0,"sd":0,"n":1,"values":[0]}}},{"key":"startup","label":"Subida de pod novo até pronto","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":null,"sd":null,"n":0},"go-listener":{"mean":null,"sd":null,"n":0}}}],"series":{"nodejs-listener":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2]],"cpu":[[15,0.1391]],"memory":[[0,15.9],[5,35.3],[10,35.3],[15,37.7]],"depth":[[-1,0],[0,0],[2,0],[3,0],[4,3488],[5,3488],[6,3488],[7,3488],[8,3488],[9,1211],[10,1211],[11,1211],[12,1211],[13,1211],[14,0]]}],"go-listener":[{"run":1,"replicas":[[0,2],[5,2]],"cpu":[],"memory":[[0,0],[5,13.8]],"depth":[[-1,0],[0,0],[1,0],[3,0],[4,0]]}]}},{"id":"queue-sustained","kind":"queue","title":"Fila: 800 msg/s por 5 minutos","description":"Fluxo constante acima da capacidade de 2 pods Node: mede se a fila acompanha.","publisher":{"MODE":"rate","RATE":"800","DURATION_SECONDS":"30"},"services":["nodejs-listener","go-listener"],"metrics":[{"key":"drain","label":"Tempo para processar tudo","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":53.64199995994568,"sd":0,"n":1,"values":[53.64199995994568]},"go-listener":{"mean":33.74000000953674,"sd":0,"n":1,"values":[33.74000000953674]}}},{"key":"consumeRate","label":"Vazão de processamento","unit":"msg/s","lowerBetter":false,"digits":0,"values":{"nodejs-listener":{"mean":447.26147455193234,"sd":0,"n":1,"values":[447.26147455193234]},"go-listener":{"mean":711.0847656555592,"sd":0,"n":1,"values":[711.0847656555592]}}},{"key":"peakDepth","label":"Pico de mensagens na fila","unit":"msg","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":10148,"sd":0,"n":1,"values":[10148]},"go-listener":{"mean":8,"sd":0,"n":1,"values":[8]}}},{"key":"published","label":"Mensagens publicadas","unit":"msg","lowerBetter":null,"digits":0,"values":{"nodejs-listener":{"mean":23992,"sd":0,"n":1,"values":[23992]},"go-listener":{"mean":23992,"sd":0,"n":1,"values":[23992]}}},{"key":"efficiency","label":"Mensagens por segundo de CPU","unit":"msg/cpu·s","lowerBetter":false,"digits":0,"values":{"nodejs-listener":{"mean":487.88068348358365,"sd":0,"n":1,"values":[487.88068348358365]},"go-listener":{"mean":2901.551396353469,"sd":0,"n":1,"values":[2901.551396353469]}}},{"key":"maxReplicas","label":"Pods no pico","unit":"pods","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":3,"sd":0,"n":1,"values":[3]},"go-listener":{"mean":2,"sd":0,"n":1,"values":[2]}}},{"key":"firstScaleUp","label":"Tempo até o 1º scale-up","unit":"s","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":50,"sd":0,"n":1,"values":[50]},"go-listener":{"mean":null,"sd":null,"n":0}}},{"key":"podSeconds","label":"Pod-segundos (custo)","unit":"pod·s","lowerBetter":true,"digits":0,"values":{"nodejs-listener":{"mean":115,"sd":0,"n":1,"values":[115]},"go-listener":{"mean":70,"sd":0,"n":1,"values":[70]}}},{"key":"cpuSeconds","label":"CPU consumida","unit":"cpu·s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":49.175957999999994,"sd":0,"n":1,"values":[49.175957999999994]},"go-listener":{"mean":8.26868,"sd":0,"n":1,"values":[8.26868]}}},{"key":"cpuAvg","label":"CPU média (soma dos pods)","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-listener":{"mean":0.6873841957130594,"sd":0,"n":1,"values":[0.6873841957130594]},"go-listener":{"mean":0.12797506056273267,"sd":0,"n":1,"values":[0.12797506056273267]}}},{"key":"cpuPeak","label":"CPU no pico","unit":"cores","lowerBetter":true,"digits":2,"values":{"nodejs-listener":{"mean":0.9992893002025899,"sd":0,"n":1,"values":[0.9992893002025899]},"go-listener":{"mean":0.189087221698362,"sd":0,"n":1,"values":[0.189087221698362]}}},{"key":"memPeak","label":"Memória no pico (soma)","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":41.9765625,"sd":0,"n":1,"values":[41.9765625]},"go-listener":{"mean":15.9921875,"sd":0,"n":1,"values":[15.9921875]}}},{"key":"memPod","label":"Memória média por pod","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":17.252663352272727,"sd":0,"n":1,"values":[17.252663352272727]},"go-listener":{"mean":5.157645089285714,"sd":0,"n":1,"values":[5.157645089285714]}}},{"key":"memIdle","label":"Memória por pod em repouso","unit":"MB","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":15.953125,"sd":0,"n":1,"values":[15.953125]},"go-listener":{"mean":2.234375,"sd":0,"n":1,"values":[2.234375]}}},{"key":"startup","label":"Subida de pod novo até pronto","unit":"s","lowerBetter":true,"digits":1,"values":{"nodejs-listener":{"mean":1,"sd":0,"n":1,"values":[1]},"go-listener":{"mean":null,"sd":null,"n":0}}}],"series":{"nodejs-listener":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2],[40,2],[45,2],[50,3],[55,3]],"cpu":[[15,0.1699],[20,0.4421],[25,0.5405],[30,0.6784],[35,0.7827],[40,0.8869],[45,0.9992],[50,0.9993],[55,0.958]],"memory":[[0,16],[5,34.2],[10,34.2],[15,38.2],[20,40.5],[25,40.5],[30,40.6],[35,40.3],[40,40.3],[45,40.3],[50,42],[55,42.5]],"depth":[[-1,0],[0,0],[1,0],[2,0],[4,1397],[5,1397],[6,1397],[7,1397],[9,3247],[10,3247],[11,3247],[12,3247],[13,4909],[15,4909],[16,4909],[17,4909],[18,6625],[19,6625],[21,6625],[22,6625],[23,8388],[24,8388],[25,8388],[27,8388],[28,10148],[29,10148],[30,10148],[31,10148],[33,9306],[34,9306],[35,9306],[36,9306],[37,9306],[38,6992],[39,6992],[40,6992],[41,6992],[42,6992],[43,4640],[44,4640],[45,4640],[46,4640],[47,4640],[48,1343],[49,1343],[50,1343],[51,1343],[52,1343],[53,0]]}],"go-listener":[{"run":1,"replicas":[[0,2],[5,2],[10,2],[15,2],[20,2],[25,2],[30,2],[35,2]],"cpu":[[15,0.0473],[20,0.1241],[25,0.1514],[30,0.1891],[35,0.2158]],"memory":[[0,4.5],[5,4.5],[10,4.5],[15,11.1],[20,16],[25,16],[30,15.7],[35,15.1]],"depth":[[-1,0],[0,0],[1,0],[3,0],[4,0],[5,0],[6,0],[7,0],[9,0],[10,0],[11,0],[12,0],[13,8],[15,8],[16,8],[17,8],[18,6],[19,6],[21,6],[22,6],[23,0],[25,0],[26,0],[27,0],[28,0],[29,0],[31,0],[32,0],[33,0]]}]}}]};
+
+const nf = (d) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (v, d) => (v == null || !Number.isFinite(v) ? '—' : nf(d).format(v));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const langOf = (svc) => (DATA.services[svc].lang === 'Go' ? 'go' : 'node');
+
+// Compara Node × Go numa métrica: quem venceu, por quanto, e se a diferença é maior que a variação entre rodadas.
+function compare(m, nodeSvc, goSvc) {
+  const a = m.values[nodeSvc], b = m.values[goSvc];
+  if (m.lowerBetter == null || a.mean == null || b.mean == null) return null;
+  if (a.mean === b.mean) return { tie: true };
+  const nodeWins = m.lowerBetter ? a.mean < b.mean : a.mean > b.mean;
+  const hi = Math.max(a.mean, b.mean), lo = Math.min(a.mean, b.mean);
+  const ratio = lo > 0 ? hi / lo : Infinity;
+  const noise = Math.abs(a.mean - b.mean) <= (a.sd || 0) + (b.sd || 0);
+  if (ratio < 1.03 || noise && ratio < 1.15) return { tie: true, ratio, noise };
+  return { winner: nodeWins ? 'node' : 'go', ratio, noise };
+}
+
+function chip(c) {
+  if (!c) return '<span class="chip tie">—</span>';
+  if (c.tie) return '<span class="chip tie">empate</span>';
+  const name = c.winner === 'go' ? 'Go' : 'Node.js';
+  const r = Number.isFinite(c.ratio) ? `${fmt(c.ratio, c.ratio >= 10 ? 0 : 1)}×` : '∞';
+  return `<span class="chip ${c.winner}">${name} ${r}${c.noise ? ' <span class="noise">(na variação)</span>' : ''}</span>`;
+}
+
+function cell(v, m, cls) {
+  const sd = v.n > 1 && v.sd ? ` <span class="sd">± ${fmt(v.sd, m.digits)}</span>` : '';
+  return `<td class="v ${cls}">${fmt(v.mean, m.digits)}<span class="unit">${esc(m.unit)}</span>${sd}</td>`;
+}
+
+const HEADLINES = { http: ['p95', 'peakRps', 'maxReplicas', 'cpuSeconds', 'efficiency'], queue: ['drain', 'consumeRate', 'maxReplicas', 'cpuSeconds', 'efficiency'] };
+
+function render() {
+  const app = document.getElementById('app');
+  if (!DATA) { app.innerHTML = '<p class="empty">Sem dados. Gere o relatório com node loadtest/report.mjs.</p>'; return; }
+
+  const started = new Date(DATA.startedAt).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+  const pair = (sc) => {
+    const node = sc.services.find((s) => langOf(s) === 'node');
+    const go = sc.services.find((s) => langOf(s) === 'go');
+    return { node, go };
+  };
+
+  let html = `
+  <header>
+    <span class="eyebrow">Benchmark de runtime · Kubernetes (Docker Desktop)</span>
+    <h1><span class="node">Node.js</span> <span class="x">×</span> <span class="go">Go</span></h1>
+    <p>Mesmo serviço nas duas linguagens: um endpoint HTTP e um consumidor RabbitMQ que calculam ${fmt(DATA.hashIterations, 0)} iterações de SHA-256.
+    Cada cenário rodou ${DATA.runsPerScenario}× por serviço, isolado (só o serviço testado e o RabbitMQ no cluster), com a ordem alternada entre rodadas.</p>
+    <div class="meta"><span>${esc(started)}</span><span>suíte ${esc(DATA.suiteId)}</span><span>${DATA.totalRuns} rodadas</span>${DATA.failures.length ? `<span>${DATA.failures.length} com falha</span>` : ''}</div>
+    ${DATA.quick ? '<div class="banner">Execução rápida (QUICK=1): cargas e durações reduzidas para validar o pipeline. Os números não servem para conclusões.</div>' : ''}
+  </header>
+
+  <div class="setup">
+    <div><span>Recursos por pod</span><b>500m · 256Mi</b><span>request = limit, iguais nos 4</span></div>
+    <div><span>Escala</span><b>2 → 5 pods</b><span>CPU 70% (HPA e KEDA)</span></div>
+    <div><span>Listeners</span><b>prefetch 5</b><span>+ escala com 10 msg/pod na fila</span></div>
+    <div><span>Imagem Go</span><b class="go">${fmt(DATA.images.go, 1)} MB</b><span>distroless, binário estático</span></div>
+    <div><span>Imagem Node.js</span><b class="node">${fmt(DATA.images.nodejs, 1)} MB</b><span>node:24-alpine</span></div>
+  </div>`;
+
+  // Placar geral
+  html += `<section><div class="section-head"><span class="eyebrow">Resumo</span><h2>Placar por cenário</h2>
+    <p>Médias das rodadas. O selo indica quem foi melhor e por quantas vezes. “Na variação” marca diferenças menores que o desvio padrão somado das duas linguagens.</p></div>
+    <div class="table-wrap"><table class="scoreboard"><thead><tr><th>Cenário</th><th>Métrica</th><th class="v">Node.js</th><th class="v">Go</th><th>Resultado</th></tr></thead><tbody>`;
+  for (const sc of DATA.scenarios) {
+    const { node, go } = pair(sc);
+    const rows = HEADLINES[sc.kind].map((k) => sc.metrics.find((m) => m.key === k)).filter(Boolean);
+    rows.forEach((m, i) => {
+      const c = compare(m, node, go);
+      html += `<tr>${i === 0 ? `<td rowspan="${rows.length}"><a href="#${sc.id}">${esc(sc.title)}</a></td>` : ''}
+        <td>${esc(m.label)}</td>${cell(m.values[node], m, c?.winner === 'node' ? 'best node-col' : '')}${cell(m.values[go], m, c?.winner === 'go' ? 'best go-col' : '')}<td>${chip(c)}</td></tr>`;
+    });
+  }
+  html += '</tbody></table></div></section>';
+
+  // Seções por cenário
+  for (const sc of DATA.scenarios) {
+    const { node, go } = pair(sc);
+    const n = Math.max(...sc.metrics.map((m) => Math.max(m.values[node].n, m.values[go].n)));
+    html += `<section id="${sc.id}"><div class="section-head"><span class="eyebrow">${sc.kind === 'http' ? 'HTTP · k6' : 'Fila · RabbitMQ'} · ${n} rodada${n > 1 ? 's' : ''}</span>
+      <h2>${esc(sc.title)}</h2><p>${esc(sc.description)}</p></div>
+      <div class="table-wrap"><table><thead><tr><th class="label-col">Métrica</th><th class="v">Node.js</th><th class="v">Go</th><th>Resultado</th></tr></thead><tbody>`;
+    for (const m of sc.metrics) {
+      const c = compare(m, node, go);
+      html += `<tr><td>${esc(m.label)}</td>${cell(m.values[node], m, c?.winner === 'node' ? 'best node-col' : '')}${cell(m.values[go], m, c?.winner === 'go' ? 'best go-col' : '')}<td>${chip(c)}</td></tr>`;
+    }
+    const runsAvailable = [...new Set([...sc.series[node], ...sc.series[go]].map((r) => r.run))].sort();
+    html += `</tbody></table></div>
+      <div class="charts-bar">
+        <div class="legend"><span><i style="background:var(--node)"></i>Node.js</span><span><i style="background:var(--go)"></i>Go</span></div>
+        <div class="runs" role="group" aria-label="Rodada exibida nos gráficos">${runsAvailable.map((r, i) =>
+          `<button type="button" id="run-${sc.id}-${r}" data-sc="${sc.id}" data-run="${r}" aria-pressed="${i === 0}">Rodada ${r}</button>`).join('')}</div>
+      </div>
+      <div class="charts" id="charts-${sc.id}"></div></section>`;
+  }
+
+  html += `<section class="notes"><span class="eyebrow">Como ler</span>
+    <p><b>CPU consumida</b> soma o tempo de CPU de todos os pods do serviço durante o teste. <b>Requisições (ou mensagens) por segundo de CPU</b> é a eficiência: quanto trabalho cada segundo de CPU entregou.</p>
+    <p><b>Pod-segundos</b> é a soma, ao longo do teste, de quantos pods estavam de pé. Serve como indicador de custo de infraestrutura.</p>
+    <p><b>Requisições não enviadas</b> acontecem quando o servidor fica tão lento que o k6 não tem usuários livres para manter a taxa pedida. É sinal de saturação.</p>
+    <p>CPU e memória vêm do cAdvisor, que no Docker Desktop amostra a cada 12–16 s: picos curtos aparecem suavizados nos gráficos.</p></section>`;
+
+  app.innerHTML = html;
+  for (const sc of DATA.scenarios) drawCharts(sc, sc.series[pair(sc).node][0]?.run ?? 1);
+  app.addEventListener('click', (e) => {
+    const b = e.target.closest('.runs button');
+    if (!b) return;
+    b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    drawCharts(DATA.scenarios.find((s) => s.id === b.dataset.sc), Number(b.dataset.run));
+  });
+}
+
+// ---------------------------------------------------------------- gráficos
+const charts = new Map();
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function drawCharts(sc, run) {
+  const host = document.getElementById(`charts-${sc.id}`);
+  host.dataset.run = run;
+  const pick = (svc) => sc.series[svc].find((r) => r.run === run);
+  const node = sc.services.find((s) => langOf(s) === 'node');
+  const go = sc.services.find((s) => langOf(s) === 'go');
+  const panels = [
+    ['replicas', 'Pods em execução', 'pods', 0],
+    ['cpu', 'CPU (soma dos pods)', 'cores', 2],
+    ['memory', 'Memória (soma dos pods)', 'MB', 0],
+    ...(sc.kind === 'http'
+      ? [['rps', 'Requisições por segundo', 'req/s', 0], ['p95', 'Latência p95 acumulada', 'ms', 1]]
+      : [['depth', 'Mensagens na fila', 'msg', 0]]),
+  ];
+  for (const [, c] of charts) if (c.sc === sc.id) { c.chart.destroy(); charts.delete(c.key); }
+  host.innerHTML = panels.map(([k, title, unit]) =>
+    `<div class="chart"><h3>${esc(title)} <span class="eyebrow">${esc(unit)}</span></h3><div class="box"><canvas id="c-${sc.id}-${k}" role="img" aria-label="${esc(title)}: Node.js e Go ao longo do teste"></canvas></div></div>`).join('');
+
+  if (typeof Chart === 'undefined') { host.insertAdjacentHTML('afterbegin', '<p class="empty">Os gráficos não carregaram (biblioteca indisponível).</p>'); return; }
+  const fg = css('--muted'), grid = css('--line');
+  for (const [k, , unit, digits] of panels) {
+    const ds = [[node, css('--node'), 'Node.js'], [go, css('--go'), 'Go']].map(([svc, color, label]) => ({
+      label, borderColor: color, backgroundColor: color + '22', fill: k === 'depth', borderWidth: 2, pointRadius: 0, tension: 0.25,
+      stepped: k === 'replicas' ? 'before' : false,
+      data: (pick(svc)?.[k] ?? []).map(([x, y]) => ({ x, y })),
+    }));
+    const key = `${sc.id}-${k}`;
+    const chart = new Chart(document.getElementById(`c-${key}`), {
+      type: 'line',
+      data: { datasets: ds },
+      options: {
+        animation: false, maintainAspectRatio: false, parsing: false,
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.y, digits)} ${unit}`, title: (i) => `${i[0].parsed.x} s` } } },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'segundos desde o início', color: fg }, ticks: { color: fg }, grid: { color: grid } },
+          y: { beginAtZero: true, ticks: { color: fg, precision: k === 'replicas' ? 0 : undefined }, grid: { color: grid } },
+        },
+      },
+    });
+    charts.set(key, { key, sc: sc.id, chart });
+  }
+}
+
+render();
+// Redesenha os gráficos quando o tema muda (cores vêm dos tokens CSS).
+const redraw = () => DATA && DATA.scenarios.forEach((sc) => {
+  const host = document.getElementById(`charts-${sc.id}`);
+  if (host) drawCharts(sc, Number(host.dataset.run));
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

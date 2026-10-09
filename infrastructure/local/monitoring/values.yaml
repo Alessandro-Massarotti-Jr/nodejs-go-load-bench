@@ -1,0 +1,63 @@
+kube-prometheus-stack:
+  fullnameOverride: kps
+
+  # Só o necessário para o benchmark.
+  alertmanager:
+    enabled: false
+  nodeExporter:
+    enabled: false
+  defaultRules:
+    create: false
+  # Componentes do control plane não são acessíveis no Docker Desktop.
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  kubeProxy:
+    enabled: false
+
+  prometheus:
+    service:
+      # Acessível em localhost:9090 (usado pelo orquestrador dos testes).
+      type: LoadBalancer
+      port: 9090
+      # Porta do config-reloader; a padrão (8080) conflita com o servidor Go local.
+      reloaderWebPort: 9091
+    prometheusSpec:
+      scrapeInterval: 5s
+      evaluationInterval: 15s
+      retention: 15d
+      # Recebe as métricas do k6 (experimental-prometheus-rw).
+      enableRemoteWriteReceiver: true
+      # Lê ServiceMonitors de qualquer namespace/release (ex.: RabbitMQ no "bench").
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      resources:
+        requests:
+          cpu: 200m
+          memory: 512Mi
+        limits:
+          memory: 2Gi
+
+  # CPU/memória por container (cAdvisor) com resolução de 5s.
+  kubelet:
+    serviceMonitor:
+      interval: 5s
+
+  kube-state-metrics:
+    prometheus:
+      monitor:
+        interval: 5s
+
+  grafana:
+    adminPassword: admin
+    service:
+      # Acessível em localhost:3030.
+      type: LoadBalancer
+      port: 3030
+    sidecar:
+      dashboards:
+        enabled: true
+        searchNamespace: ALL

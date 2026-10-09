@@ -1,0 +1,12 @@
+namespace: bench
+image: rabbitmq:4-management
+username: admin
+password: admin
+requests:
+  memory: "512Mi"
+  cpu: "250m"
+limits:
+  memory: "2Gi"
+  cpu: "2"
+# Porta em localhost para a API de gerenciamento (usada pelo orquestrador dos testes).
+managementPort: 15673

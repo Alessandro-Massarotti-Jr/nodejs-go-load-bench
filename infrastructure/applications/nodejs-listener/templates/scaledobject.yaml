@@ -1,0 +1,44 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: nodejs-listener
+  namespace: {{ .Values.namespace }}
+spec:
+  scaleTargetRef:
+    name: nodejs-listener
+  minReplicaCount: {{ .Values.MIN_REPLICAS }}
+  maxReplicaCount: {{ .Values.MAX_REPLICAS }}
+  pollingInterval: 5
+  advanced:
+    horizontalPodAutoscalerConfig:
+      # Mesmo behavior do HPA dos serviços HTTP.
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 30
+          selectPolicy: Min
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Pods
+            value: 1
+            periodSeconds: 15
+          selectPolicy: Max
+  triggers:
+  # Escala pelo tamanho da fila...
+  - type: rabbitmq
+    metadata:
+      protocol: amqp
+      queueName: nodejs-queue
+      mode: QueueLength
+      value: {{ .Values.QUEUE_LENGTH | quote }}
+    authenticationRef:
+      name: rabbitmq-connection
+  # ...e pela mesma regra de CPU dos serviços HTTP.
+  - type: cpu
+    metricType: Utilization
+    metadata:
+      value: "70"

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs
+  labels:
+    app: nodejs
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: nodejs
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+      {{- end }}
+      containers:
+        - name: nodejs
+          image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          command: ["node", "src/http.js"]
+          resources:
+            requests:
+              memory: {{ .Values.requests.memory }}
+              cpu: {{ .Values.requests.cpu }}
+            limits:
+              memory: {{ .Values.limits.memory }}
+              cpu: {{ .Values.limits.cpu }}
+          ports:
+            - containerPort: 3000
+          # startupProbe só na subida: o pod fica pronto quando passa a escutar a porta.
+          # Sem readinessProbe periódica: sob saturação (principalmente no Node, com o
+          # event loop e o backlog de conexões cheios) a probe falharia, o pod ficaria
+          # "não pronto" e o HPA descartaria as métricas dele, impedindo a escala.
+          startupProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 1
+            failureThreshold: 30
+          # Tolerante: só reinicia um processo que parou de responder por ~30s.
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 6
+          envFrom:
+            {{- range .Values.configMaps }}
+            - configMapRef:
+                name: {{ . }}
+            {{- end }}
+            {{- range .Values.secrets }}
+            - secretRef:
+                name: {{ . }}
+            {{- end }}

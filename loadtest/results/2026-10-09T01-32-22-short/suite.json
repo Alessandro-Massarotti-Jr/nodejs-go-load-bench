@@ -1,0 +1,141 @@
+{
+  "suiteId": "2026-10-09T01-32-22-short",
+  "profile": "short",
+  "quick": false,
+  "startedAt": "2026-10-09T01:32:22.771Z",
+  "settings": {
+    "profile": "short",
+    "runs": 1,
+    "settleSeconds": 15,
+    "tailSeconds": 10,
+    "drainTimeoutSeconds": 1200,
+    "k6Resources": {
+      "requests": {
+        "cpu": "2",
+        "memory": "1Gi"
+      },
+      "limits": {
+        "cpu": "6",
+        "memory": "3Gi"
+      }
+    },
+    "publisherResources": {
+      "requests": {
+        "cpu": "500m",
+        "memory": "128Mi"
+      },
+      "limits": {
+        "cpu": "2",
+        "memory": "512Mi"
+      }
+    }
+  },
+  "scenarios": {
+    "http-baseline": {
+      "kind": "http",
+      "title": "HTTP: baseline (200 req/s constantes)",
+      "description": "Carga leve e constante por 1 min: mede latência sem pressão de escala.",
+      "k6": {
+        "executor": "constant-arrival-rate",
+        "rate": 200,
+        "timeUnit": "1s",
+        "duration": "1m",
+        "preAllocatedVUs": 50,
+        "maxVUs": 500
+      }
+    },
+    "http-ramp": {
+      "kind": "http",
+      "title": "HTTP: rampa até 1.500 req/s",
+      "description": "Sobe de 0 a 1.500 req/s em 90 s e segura 30 s: força o autoscaling.",
+      "k6": {
+        "executor": "ramping-arrival-rate",
+        "startRate": 0,
+        "timeUnit": "1s",
+        "preAllocatedVUs": 200,
+        "maxVUs": 2000,
+        "stages": [
+          {
+            "target": 1500,
+            "duration": "90s"
+          },
+          {
+            "target": 1500,
+            "duration": "30s"
+          }
+        ]
+      }
+    },
+    "http-stress": {
+      "kind": "http",
+      "title": "HTTP: estresse até 12.000 req/s",
+      "description": "Rampa de 100 a 12.000 req/s em 2 min: encontra o limite de cada serviço.",
+      "k6": {
+        "executor": "ramping-arrival-rate",
+        "startRate": 100,
+        "timeUnit": "1s",
+        "preAllocatedVUs": 500,
+        "maxVUs": 3000,
+        "stages": [
+          {
+            "target": 12000,
+            "duration": "2m"
+          }
+        ]
+      }
+    },
+    "queue-burst": {
+      "kind": "queue",
+      "title": "Fila: rajada de 30.000 mensagens",
+      "description": "Publica 30.000 mensagens de uma vez e mede o tempo até a fila esvaziar.",
+      "publisher": {
+        "MODE": "burst",
+        "COUNT": "30000"
+      }
+    },
+    "queue-sustained": {
+      "kind": "queue",
+      "title": "Fila: 800 msg/s por 90 s",
+      "description": "Fluxo constante acima da capacidade de 2 pods Node: mede se a fila acompanha.",
+      "publisher": {
+        "MODE": "rate",
+        "RATE": "800",
+        "DURATION_SECONDS": "90"
+      }
+    }
+  },
+  "services": {
+    "nodejs-http": {
+      "chart": "nodejs",
+      "lang": "Node.js",
+      "kind": "http",
+      "target": "http://nodejs-svc:3001/"
+    },
+    "go-http": {
+      "chart": "go",
+      "lang": "Go",
+      "kind": "http",
+      "target": "http://go-svc:8081/"
+    },
+    "nodejs-listener": {
+      "chart": "nodejs-listener",
+      "lang": "Node.js",
+      "kind": "queue",
+      "queue": "nodejs-queue"
+    },
+    "go-listener": {
+      "chart": "go-listener",
+      "lang": "Go",
+      "kind": "queue",
+      "queue": "go-queue"
+    }
+  },
+  "images": {
+    "goImageBytes": 13783806,
+    "nodejsImageBytes": 172833841
+  },
+  "hashIterations": 1000,
+  "cluster": {
+    "context": "docker-desktop"
+  }
+}

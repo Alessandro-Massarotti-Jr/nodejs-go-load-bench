@@ -1,0 +1,285 @@
+<title>Go × Node.js no Kubernetes</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: relatório de bancada em uma coluna; cada cenário é uma "ficha de ensaio" com tabela comparativa e gráficos. */
+:root {
+  --bg: #f5f7f9;
+  --surface: #ffffff;
+  --fg: #16202a;
+  --muted: #5b6875;
+  --line: #dde3e9;
+  --go: #0089ad;
+  --node: #3f7f33;
+  --go-soft: #e0f3f8;
+  --node-soft: #e6f1e2;
+  --warn-bg: #fff4d6;
+  --warn-fg: #6b4e00;
+  --tie: #8a96a3;
+  --font-display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #161e26; --fg: #e4eaf0; --muted: #94a2af; --line: #26323d;
+    --go: #3fc4e8; --node: #7cc26a; --go-soft: #0f2d38; --node-soft: #1a2e16;
+    --warn-bg: #3a2f0d; --warn-fg: #f3d27a; --tie: #7d8a97;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #161e26; --fg: #e4eaf0; --muted: #94a2af; --line: #26323d;
+  --go: #3fc4e8; --node: #7cc26a; --go-soft: #0f2d38; --node-soft: #1a2e16;
+  --warn-bg: #3a2f0d; --warn-fg: #f3d27a; --tie: #7d8a97;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+.page { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 48px; }
+h1, h2, h3 { font-family: var(--font-display); font-stretch: 80%; text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.75rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 600; font-stretch: 90%; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 0.72rem/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+.go { color: var(--go); }
+.node { color: var(--node); }
+
+header { display: grid; gap: 14px; }
+header h1 .x { color: var(--muted); font-weight: 500; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 20px; color: var(--muted); font: 0.8rem var(--font-data); }
+.banner { background: var(--warn-bg); color: var(--warn-fg); padding: 12px 16px; border-radius: 6px; font-size: 0.9rem; max-width: 80ch; }
+.banner.info { background: var(--go-soft); color: var(--fg); }
+
+.setup { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.setup div { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.setup b { font: 600 1.05rem var(--font-data); }
+.setup span { color: var(--muted); font-size: 0.8rem; }
+
+section { display: grid; gap: 18px; min-width: 0; }
+.section-head { display: grid; gap: 6px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: baseline; }
+tr:last-child td { border-bottom: 0; }
+th { font: 600 0.7rem var(--font-data); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); background: var(--bg); }
+td.v { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+th.v { text-align: right; }
+td .sd { color: var(--muted); font-size: 0.78rem; }
+td .unit { color: var(--muted); font-size: 0.78rem; margin-left: 3px; }
+td.best { font-weight: 600; }
+td.best.go-col { color: var(--go); }
+td.best.node-col { color: var(--node); }
+.chip { display: inline-block; font: 600 0.75rem var(--font-data); padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.chip.go { background: var(--go-soft); color: var(--go); }
+.chip.node { background: var(--node-soft); color: var(--node); }
+.chip.tie { color: var(--tie); border: 1px solid var(--line); }
+.chip .noise { font-weight: 400; opacity: 0.8; }
+.label-col { min-width: 220px; }
+
+.scoreboard td:first-child { font-weight: 500; }
+
+.charts-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; justify-content: space-between; }
+.runs { display: flex; gap: 6px; flex-wrap: wrap; }
+.runs button { font: 500 0.8rem var(--font-data); padding: 5px 11px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.runs button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.runs button:focus-visible { outline: 2px solid var(--go); outline-offset: 2px; }
+.legend { display: flex; gap: 16px; font-size: 0.82rem; color: var(--muted); }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 14px; }
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 14px 8px; display: grid; gap: 8px; min-width: 0; }
+.chart .box { position: relative; height: 220px; }
+.empty { color: var(--muted); font-size: 0.85rem; }
+
+.notes { display: grid; gap: 10px; color: var(--muted); font-size: 0.88rem; }
+.notes p { max-width: 80ch; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<main class="page" id="app">
+  <p class="empty">Carregando relatório…</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+
+const nf = (d) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmt = (v, d) => (v == null || !Number.isFinite(v) ? '—' : nf(d).format(v));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const langOf = (svc) => (DATA.services[svc].lang === 'Go' ? 'go' : 'node');
+
+// Compara Node × Go numa métrica: quem venceu, por quanto, e se a diferença é maior que a variação entre rodadas.
+function compare(m, nodeSvc, goSvc) {
+  const a = m.values[nodeSvc], b = m.values[goSvc];
+  if (m.lowerBetter == null || a.mean == null || b.mean == null) return null;
+  if (a.mean === b.mean) return { tie: true };
+  const nodeWins = m.lowerBetter ? a.mean < b.mean : a.mean > b.mean;
+  const hi = Math.max(a.mean, b.mean), lo = Math.min(a.mean, b.mean);
+  const ratio = lo > 0 ? hi / lo : Infinity;
+  const noise = Math.abs(a.mean - b.mean) <= (a.sd || 0) + (b.sd || 0);
+  if (ratio < 1.03 || noise && ratio < 1.15) return { tie: true, ratio, noise };
+  return { winner: nodeWins ? 'node' : 'go', ratio, noise };
+}
+
+function chip(c) {
+  if (!c) return '<span class="chip tie">—</span>';
+  if (c.tie) return '<span class="chip tie">empate</span>';
+  const name = c.winner === 'go' ? 'Go' : 'Node.js';
+  const r = Number.isFinite(c.ratio) ? `${fmt(c.ratio, c.ratio >= 10 ? 0 : 1)}×` : '∞';
+  return `<span class="chip ${c.winner}">${name} ${r}${c.noise ? ' <span class="noise">(na variação)</span>' : ''}</span>`;
+}
+
+function cell(v, m, cls) {
+  const sd = v.n > 1 && v.sd ? ` <span class="sd">± ${fmt(v.sd, m.digits)}</span>` : '';
+  return `<td class="v ${cls}">${fmt(v.mean, m.digits)}<span class="unit">${esc(m.unit)}</span>${sd}</td>`;
+}
+
+const HEADLINES = { http: ['p95', 'peakRps', 'maxReplicas', 'cpuSeconds', 'efficiency'], queue: ['drain', 'consumeRate', 'maxReplicas', 'cpuSeconds', 'efficiency'] };
+
+function render() {
+  const app = document.getElementById('app');
+  if (!DATA) { app.innerHTML = '<p class="empty">Sem dados. Gere o relatório com node loadtest/report.mjs.</p>'; return; }
+
+  const started = new Date(DATA.startedAt).toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' });
+  const pair = (sc) => {
+    const node = sc.services.find((s) => langOf(s) === 'node');
+    const go = sc.services.find((s) => langOf(s) === 'go');
+    return { node, go };
+  };
+
+  let html = `
+  <header>
+    <span class="eyebrow">Benchmark de runtime · Kubernetes (Docker Desktop)</span>
+    <h1><span class="node">Node.js</span> <span class="x">×</span> <span class="go">Go</span></h1>
+    <p>Mesmo serviço nas duas linguagens: um endpoint HTTP e um consumidor RabbitMQ que calculam ${fmt(DATA.hashIterations, 0)} iterações de SHA-256.
+    Cada cenário rodou ${DATA.runsPerScenario}× por serviço, isolado (só o serviço testado e o RabbitMQ no cluster), com a ordem alternada entre rodadas.</p>
+    <div class="meta"><span>${esc(started)}</span><span>suíte ${esc(DATA.suiteId)}</span><span>${DATA.totalRuns} rodadas</span>${DATA.failures.length ? `<span>${DATA.failures.length} com falha</span>` : ''}</div>
+    ${DATA.quick ? '<div class="banner">Execução rápida (QUICK=1): cargas e durações reduzidas para validar o pipeline. Os números não servem para conclusões.</div>' : ''}
+    ${DATA.profile === 'short' ? `<div class="banner info">Perfil curto: cenários encurtados${DATA.runsPerScenario === 1 ? ' e uma única rodada, então não há desvio padrão. Diferenças grandes são confiáveis; diferenças pequenas podem ser oscilação do ambiente' : ''}. O autoscaling tem menos tempo para aparecer do que na suíte completa.</div>` : ''}
+  </header>
+
+  <div class="setup">
+    <div><span>Recursos por pod</span><b>500m · 256Mi</b><span>request = limit, iguais nos 4</span></div>
+    <div><span>Escala</span><b>2 → 5 pods</b><span>CPU 70% (HPA e KEDA)</span></div>
+    <div><span>Listeners</span><b>prefetch 5</b><span>+ escala com 10 msg/pod na fila</span></div>
+    <div><span>Imagem Go</span><b class="go">${fmt(DATA.images.go, 1)} MB</b><span>distroless, binário estático</span></div>
+    <div><span>Imagem Node.js</span><b class="node">${fmt(DATA.images.nodejs, 1)} MB</b><span>node:24-alpine</span></div>
+  </div>`;
+
+  // Placar geral
+  html += `<section><div class="section-head"><span class="eyebrow">Resumo</span><h2>Placar por cenário</h2>
+    <p>Médias das rodadas. O selo indica quem foi melhor e por quantas vezes. “Na variação” marca diferenças menores que o desvio padrão somado das duas linguagens.</p></div>
+    <div class="table-wrap"><table class="scoreboard"><thead><tr><th>Cenário</th><th>Métrica</th><th class="v">Node.js</th><th class="v">Go</th><th>Resultado</th></tr></thead><tbody>`;
+  for (const sc of DATA.scenarios) {
+    const { node, go } = pair(sc);
+    const rows = HEADLINES[sc.kind].map((k) => sc.metrics.find((m) => m.key === k)).filter(Boolean);
+    rows.forEach((m, i) => {
+      const c = compare(m, node, go);
+      html += `<tr>${i === 0 ? `<td rowspan="${rows.length}"><a href="#${sc.id}">${esc(sc.title)}</a></td>` : ''}
+        <td>${esc(m.label)}</td>${cell(m.values[node], m, c?.winner === 'node' ? 'best node-col' : '')}${cell(m.values[go], m, c?.winner === 'go' ? 'best go-col' : '')}<td>${chip(c)}</td></tr>`;
+    });
+  }
+  html += '</tbody></table></div></section>';
+
+  // Seções por cenário
+  for (const sc of DATA.scenarios) {
+    const { node, go } = pair(sc);
+    const n = Math.max(...sc.metrics.map((m) => Math.max(m.values[node].n, m.values[go].n)));
+    html += `<section id="${sc.id}"><div class="section-head"><span class="eyebrow">${sc.kind === 'http' ? 'HTTP · k6' : 'Fila · RabbitMQ'} · ${n} rodada${n > 1 ? 's' : ''}</span>
+      <h2>${esc(sc.title)}</h2><p>${esc(sc.description)}</p></div>
+      <div class="table-wrap"><table><thead><tr><th class="label-col">Métrica</th><th class="v">Node.js</th><th class="v">Go</th><th>Resultado</th></tr></thead><tbody>`;
+    for (const m of sc.metrics) {
+      const c = compare(m, node, go);
+      html += `<tr><td>${esc(m.label)}</td>${cell(m.values[node], m, c?.winner === 'node' ? 'best node-col' : '')}${cell(m.values[go], m, c?.winner === 'go' ? 'best go-col' : '')}<td>${chip(c)}</td></tr>`;
+    }
+    const runsAvailable = [...new Set([...sc.series[node], ...sc.series[go]].map((r) => r.run))].sort();
+    html += `</tbody></table></div>
+      <div class="charts-bar">
+        <div class="legend"><span><i style="background:var(--node)"></i>Node.js</span><span><i style="background:var(--go)"></i>Go</span></div>
+        <div class="runs" role="group" aria-label="Rodada exibida nos gráficos">${runsAvailable.map((r, i) =>
+          `<button type="button" id="run-${sc.id}-${r}" data-sc="${sc.id}" data-run="${r}" aria-pressed="${i === 0}">Rodada ${r}</button>`).join('')}</div>
+      </div>
+      <div class="charts" id="charts-${sc.id}"></div></section>`;
+  }
+
+  html += `<section class="notes"><span class="eyebrow">Como ler</span>
+    <p><b>CPU consumida</b> soma o tempo de CPU de todos os pods do serviço durante o teste. <b>Requisições (ou mensagens) por segundo de CPU</b> é a eficiência: quanto trabalho cada segundo de CPU entregou.</p>
+    <p><b>Pod-segundos</b> é a soma, ao longo do teste, de quantos pods estavam de pé. Serve como indicador de custo de infraestrutura.</p>
+    <p><b>Requisições não enviadas</b> acontecem quando o servidor fica tão lento que o k6 não tem usuários livres para manter a taxa pedida. É sinal de saturação.</p>
+    <p><b>Sem readiness probe periódica.</b> Os serviços HTTP só têm uma <code>startupProbe</code> na subida e uma <code>livenessProbe</code> tolerante. Com readiness periódica, um pod Node saturado deixava de responder à probe (event loop e backlog de conexões cheios), era marcado como não pronto, e o HPA descartava as métricas dele e não escalava. A configuração é igual nas duas linguagens.</p>
+    <p><b>Reinícios de pod</b> contam quantas vezes a liveness probe matou um pod por ele não aceitar conexões TCP por cerca de 30 s. Quando há reinício, o tempo de <b>subida de pod novo até pronto</b> fica inflado, porque inclui o reinício.</p>
+    <p>CPU e memória vêm do cAdvisor, que no Docker Desktop amostra a cada 12–16 s: picos curtos aparecem suavizados nos gráficos.</p></section>`;
+
+  app.innerHTML = html;
+  for (const sc of DATA.scenarios) drawCharts(sc, sc.series[pair(sc).node][0]?.run ?? 1);
+  app.addEventListener('click', (e) => {
+    const b = e.target.closest('.runs button');
+    if (!b) return;
+    b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    drawCharts(DATA.scenarios.find((s) => s.id === b.dataset.sc), Number(b.dataset.run));
+  });
+}
+
+// ---------------------------------------------------------------- gráficos
+const charts = new Map();
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function drawCharts(sc, run) {
+  const host = document.getElementById(`charts-${sc.id}`);
+  host.dataset.run = run;
+  const pick = (svc) => sc.series[svc].find((r) => r.run === run);
+  const node = sc.services.find((s) => langOf(s) === 'node');
+  const go = sc.services.find((s) => langOf(s) === 'go');
+  const panels = [
+    ['replicas', 'Pods em execução', 'pods', 0],
+    ['cpu', 'CPU (soma dos pods)', 'cores', 2],
+    ['memory', 'Memória (soma dos pods)', 'MB', 0],
+    ...(sc.kind === 'http'
+      ? [['rps', 'Requisições por segundo', 'req/s', 0], ['p95', 'Latência p95 acumulada', 'ms', 1]]
+      : [['depth', 'Mensagens na fila', 'msg', 0]]),
+  ];
+  for (const [, c] of charts) if (c.sc === sc.id) { c.chart.destroy(); charts.delete(c.key); }
+  host.innerHTML = panels.map(([k, title, unit]) =>
+    `<div class="chart"><h3>${esc(title)} <span class="eyebrow">${esc(unit)}</span></h3><div class="box"><canvas id="c-${sc.id}-${k}" role="img" aria-label="${esc(title)}: Node.js e Go ao longo do teste"></canvas></div></div>`).join('');
+
+  if (typeof Chart === 'undefined') { host.insertAdjacentHTML('afterbegin', '<p class="empty">Os gráficos não carregaram (biblioteca indisponível).</p>'); return; }
+  const fg = css('--muted'), grid = css('--line');
+  for (const [k, , unit, digits] of panels) {
+    const ds = [[node, css('--node'), 'Node.js'], [go, css('--go'), 'Go']].map(([svc, color, label]) => ({
+      label, borderColor: color, backgroundColor: color + '22', fill: k === 'depth', borderWidth: 2, pointRadius: 0, tension: 0.25,
+      stepped: k === 'replicas' ? 'before' : false,
+      data: (pick(svc)?.[k] ?? []).map(([x, y]) => ({ x, y })),
+    }));
+    const key = `${sc.id}-${k}`;
+    const chart = new Chart(document.getElementById(`c-${key}`), {
+      type: 'line',
+      data: { datasets: ds },
+      options: {
+        animation: false, maintainAspectRatio: false, parsing: false,
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${fmt(c.parsed.y, digits)} ${unit}`, title: (i) => `${i[0].parsed.x} s` } } },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: 'segundos desde o início', color: fg }, ticks: { color: fg }, grid: { color: grid } },
+          y: { beginAtZero: true, ticks: { color: fg, precision: k === 'replicas' ? 0 : undefined }, grid: { color: grid } },
+        },
+      },
+    });
+    charts.set(key, { key, sc: sc.id, chart });
+  }
+}
+
+render();
+// Redesenha os gráficos quando o tema muda (cores vêm dos tokens CSS).
+const redraw = () => DATA && DATA.scenarios.forEach((sc) => {
+  const host = document.getElementById(`charts-${sc.id}`);
+  if (host) drawCharts(sc, Number(host.dataset.run));
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+new MutationObserver(redraw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+</script>

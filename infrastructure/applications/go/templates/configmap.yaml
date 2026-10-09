@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go
+  namespace: {{ .Values.namespace }}
+data:
+  PORT: "8080"
+  HASH_ITERATIONS: {{ .Values.HASH_ITERATIONS | quote }}

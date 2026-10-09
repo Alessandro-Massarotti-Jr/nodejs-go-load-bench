@@ -1,0 +1,17 @@
+namespace: bench
+replicas: 2
+MAX_REPLICAS: 5
+MIN_REPLICAS: 2
+requests:
+  memory: "256Mi"
+  cpu: "500m"
+limits:
+  memory: "256Mi"
+  cpu: "500m"
+servicePort: 8081
+configMaps:
+  - go
+secrets: []
+imagePullSecrets: []
+HASH_ITERATIONS: 1000
+image: bench-go:local

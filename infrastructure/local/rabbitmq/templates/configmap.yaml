@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: {{ .Values.namespace }}
+data:
+  20-bench.conf: |
+    # Estatísticas da API de gerenciamento a cada 1s (padrão 5s): mede o esvaziamento da fila com precisão.
+    collect_statistics_interval = 1000
